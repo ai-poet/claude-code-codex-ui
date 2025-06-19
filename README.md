@@ -1,5 +1,3 @@
---- README.md
-+++ README.md
 # Claude Code UI
 
 Use Claude Code to perform multiple tasks in parallel with a modern UI.
@@ -239,7 +237,7 @@ server {
 
     # Frontend (Next.js)
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://ip:3000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -252,7 +250,7 @@ server {
 
     # Backend API
     location /api/ {
-        proxy_pass http://localhost:5000/;
+        proxy_pass http://ip:5000/;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -278,7 +276,7 @@ server {
 
     # WebSocket support for real-time updates
     location /ws {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://ip:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";

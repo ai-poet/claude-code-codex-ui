@@ -34,7 +34,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.claude-automation
-      images: claude-code-automation:latest
+    image: claude-code-automation:latest
     command: ["echo", "Claude Code automation image built"]
 
 volumes:

@@ -38,6 +38,7 @@ A code agent task management system that provides parallel execution of AI-power
 
 2. **Configure Environment**
    - Add your Anthropic API key to `server/.env`
+   - Copy `async-code-web/.env.example` to `async-code-web/.env.local` and configure frontend variables
    - Get a GitHub Personal Access Token with repo permissions
    - *Optional*: Configure Supabase database (see Database Setup section)
 
@@ -73,9 +74,8 @@ See `db/README.md` for detailed database setup instructions.
 
 ## Environment Variables
 
+### Backend (server/.env)
 ```bash
-# server/.env
-
 # Required: Anthropic API Key
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 
@@ -86,6 +86,13 @@ FLASK_ENV=production
 # Leave these empty or with placeholder values to run without database
 SUPABASE_URL=your_supabase_url_here
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+```
+
+### Frontend (async-code-web/.env.local)
+```bash
+# Required: Supabase Configuration for frontend
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 ```
 
 

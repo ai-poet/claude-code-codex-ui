@@ -52,7 +52,7 @@ A code agent task management system that provides parallel execution of Claude C
 
 ## Claude Code Credentials
 
-> ![claude-credentials](https://private-user-images.githubusercontent.com/22167673/456833720-5fe87d4b-2acb-4095-a373-f3ed9f423081.png)
+> ![claude-credentials](https://s21.ax1x.com/2025/06/20/pVVBuPP.png)
 
 **Users with Claude Pro or Max plan:**
 1. Log in to Claude Code elsewhere (e.g., on your laptop) with your Pro or Max account.
@@ -489,7 +489,7 @@ server {
 
 ### Claude Code 凭证说明
 
-> ![claude-credentials](https://private-user-images.githubusercontent.com/22167673/456833720-5fe87d4b-2acb-4095-a373-f3ed9f423081.png)
+> ![claude-credentials](https://s21.ax1x.com/2025/06/20/pVVBuPP.png)
 
 **Claude Pro 或 Max 用户：**
 1. 请在其他地方（如您的笔记本电脑）登录 Claude Code（Pro 或 Max 计划）。

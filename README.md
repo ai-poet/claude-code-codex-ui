@@ -330,11 +330,7 @@ server {
 
 1. **Build for production**:
    ```bash
-   # Build frontend
-   cd async-code-web && npm run build
-   
-   # Start production services
-   docker-compose -f docker-compose.prod.yml up -d
+   ./build.sh
    ```
 
 2. **Install and configure nginx**:
@@ -361,8 +357,8 @@ server {
 4. **Start services**:
    ```bash
    # Ensure services are running on the correct ports
-   # Frontend: localhost:3000
-   # Backend: localhost:5000
+   # Frontend: ip:3000
+   # Backend: ip:5000
    ```
 
 ## License

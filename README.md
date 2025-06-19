@@ -475,7 +475,3 @@ server {
    # Frontend: ip:3000
    # Backend: ip:5000
    ```
-
-详见 LICENSE 文件。
-
----

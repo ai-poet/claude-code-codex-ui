@@ -522,7 +522,7 @@ exit 0
             # Clean up container after getting logs
             try:
                 container.reload()  # Refresh container state
-                # container.remove()
+                container.remove()
                 logger.info(f"🧹 Successfully removed container {container.id[:12]}")
             except docker.errors.NotFound:
                 logger.info(f"🧹 Container {container.id[:12]} already removed")

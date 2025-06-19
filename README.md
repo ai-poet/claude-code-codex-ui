@@ -50,6 +50,17 @@ A code agent task management system that provides parallel execution of Claude C
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:5000
 
+## Claude Code Credentials
+
+> ![claude-credentials](https://private-user-images.githubusercontent.com/22167673/456833720-5fe87d4b-2acb-4095-a373-f3ed9f423081.png)
+
+**Users with Claude Pro or Max plan:**
+1. Log in to Claude Code elsewhere (e.g., on your laptop) with your Pro or Max account.
+2. Copy the content of `~/.claude/credentials.json` from your device.
+3. Paste it into your user credential settings in this project.
+
+If credentials are not set, the system will fall back to using your API key.
+
 ## Database Setup (Required)
 
 The application requires a Supabase database for data storage and full functionality:
@@ -475,3 +486,14 @@ server {
    # Frontend: ip:3000
    # Backend: ip:5000
    ```
+
+### Claude Code 凭证说明
+
+> ![claude-credentials](https://private-user-images.githubusercontent.com/22167673/456833720-5fe87d4b-2acb-4095-a373-f3ed9f423081.png)
+
+**Claude Pro 或 Max 用户：**
+1. 请在其他地方（如您的笔记本电脑）登录 Claude Code（Pro 或 Max 计划）。
+2. 复制您设备上的 `~/.claude/credentials.json` 文件内容。
+3. 粘贴到本项目的用户凭证设置中。
+
+如果未设置 credentials，系统将自动使用 API key。

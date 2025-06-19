@@ -18,9 +18,6 @@ interface CodeAgentConfig {
         env?: Record<string, string>;
         credentials?: Record<string, any> | null;
     };
-    codex?: {
-        env?: Record<string, string>;
-    };
 }
 
 const DEFAULT_CLAUDE_ENV = {
@@ -30,13 +27,6 @@ const DEFAULT_CLAUDE_ENV = {
 
 const DEFAULT_CLAUDE_CREDENTIALS = {
     // Example structure - user can customize
-};
-
-const DEFAULT_CODEX_ENV = {
-    OPENAI_API_KEY: "",
-    DISABLE_SANDBOX: "yes",
-    CONTINUE_ON_BROWSER: "no",
-    // Add other Codex-specific env vars here if needed
 };
 
 // Helper function to check if credentials is meaningful (not empty/null/undefined)
@@ -54,12 +44,10 @@ export function CodeAgentSettings() {
     const { profile, refreshProfile } = useUserProfile();
     const [claudeEnv, setClaudeEnv] = useState("");
     const [claudeCredentials, setClaudeCredentials] = useState("");
-    const [codexEnv, setCodexEnv] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<{ 
         claudeEnv?: string; 
         claudeCredentials?: string; 
-        codexEnv?: string; 
     }>({});
 
     // Load settings from profile on mount
@@ -84,28 +72,11 @@ export function CodeAgentSettings() {
                 }
             }
             
-            // Handle backward compatibility for Codex config  
-            let codexConfig: any = {};
-            if (prefs.codex) {
-                // Check if it's the new structure
-                if (prefs.codex.env) {
-                    codexConfig = prefs.codex;
-                } else {
-                    // New structure for codex
-                    codexConfig = { env: prefs.codex };
-                }
-            } else if (prefs.codexCLI) {
-                // Old codexCLI key - migrate to new codex key
-                codexConfig = { env: prefs.codexCLI };
-            }
-            
             setClaudeEnv(JSON.stringify(claudeConfig.env || DEFAULT_CLAUDE_ENV, null, 2));
             setClaudeCredentials(JSON.stringify(claudeConfig.credentials || DEFAULT_CLAUDE_CREDENTIALS, null, 2));
-            setCodexEnv(JSON.stringify(codexConfig.env || DEFAULT_CODEX_ENV, null, 2));
         } else {
             setClaudeEnv(JSON.stringify(DEFAULT_CLAUDE_ENV, null, 2));
             setClaudeCredentials(JSON.stringify(DEFAULT_CLAUDE_CREDENTIALS, null, 2));
-            setCodexEnv(JSON.stringify(DEFAULT_CODEX_ENV, null, 2));
         }
     }, [profile]);
 
@@ -124,9 +95,8 @@ export function CodeAgentSettings() {
         // Validate all JSONs
         const isClaudeEnvValid = validateJSON(claudeEnv, "claudeEnv");
         const isClaudeCredentialsValid = validateJSON(claudeCredentials, "claudeCredentials");
-        const isCodexEnvValid = validateJSON(codexEnv, "codexEnv");
 
-        if (!isClaudeEnvValid || !isClaudeCredentialsValid || !isCodexEnvValid) {
+        if (!isClaudeEnvValid || !isClaudeCredentialsValid) {
             toast.error("Please fix JSON errors before saving");
             return;
         }
@@ -135,23 +105,19 @@ export function CodeAgentSettings() {
         try {
             const claudeEnvConfig = JSON.parse(claudeEnv);
             const claudeCredentialsConfig = JSON.parse(claudeCredentials);
-            const codexEnvConfig = JSON.parse(codexEnv);
 
             const preferences: CodeAgentConfig = {
                 claudeCode: {
                     env: claudeEnvConfig,
                     credentials: hasMeaningfulCredentials(claudeCredentialsConfig) ? claudeCredentialsConfig : null,
                 },
-                codex: {
-                    env: codexEnvConfig,
-                },
             };
 
             // Merge with existing preferences if any
             const existingPrefs = (profile?.preferences || {}) as Record<string, any>;
             
-            // Clean up old keys during migration
-            const { codexCLI, ...cleanedPrefs } = existingPrefs;
+            // Clean up old Codex keys during migration
+            const { codexCLI, codex, ...cleanedPrefs } = existingPrefs;
             
             const mergedPrefs = {
                 ...cleanedPrefs,
@@ -166,7 +132,7 @@ export function CodeAgentSettings() {
                 ? "Claude credentials will be configured" 
                 : "Claude credentials are empty and will be skipped";
             
-            toast.success(`Code agent settings saved successfully. ${credentialsMessage}`);
+            toast.success(`Claude Code settings saved successfully. ${credentialsMessage}`);
         } catch (error) {
             console.error("Failed to save settings:", error);
             toast.error("Failed to save settings");
@@ -179,9 +145,9 @@ export function CodeAgentSettings() {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Code Agent Settings</CardTitle>
+                    <CardTitle>Claude Code Settings</CardTitle>
                     <CardDescription>
-                        Configure environment variables and credentials for each code agent. These settings will be used when creating containers.
+                        Configure environment variables and credentials for Claude Code. These settings will be used when creating containers.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
@@ -256,51 +222,9 @@ export function CodeAgentSettings() {
                         </div>
                     </div>
 
-                    {/* Codex CLI Settings */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-2 pb-2 border-b">
-                            <Settings2 className="w-5 h-5 text-green-600" />
-                            <h3 className="text-lg font-semibold">Codex CLI Configuration</h3>
-                        </div>
-                        
-                        {/* Codex Environment Variables */}
-                        <div className="space-y-2">
-                            <Label htmlFor="codex-env" className="flex items-center gap-2">
-                                <Settings2 className="w-4 h-4" />
-                                Environment Variables
-                            </Label>
-                            <div className="border rounded-lg overflow-hidden">
-                                <CodeMirror
-                                    id="codex-env"
-                                    value={codexEnv}
-                                    height="200px"
-                                    extensions={[javascript({ jsx: false })]}
-                                    theme={githubLight}
-                                    onChange={(value) => {
-                                        setCodexEnv(value);
-                                        validateJSON(value, "codexEnv");
-                                    }}
-                                    placeholder={JSON.stringify(DEFAULT_CODEX_ENV, null, 2)}
-                                />
-                            </div>
-                            {errors.codexEnv && (
-                                <p className="text-sm text-red-500 mt-1">{errors.codexEnv}</p>
-                            )}
-                            <p className="text-sm text-muted-foreground">
-                                Configure environment variables for Codex CLI (@openai/codex)
-                            </p>
-                        </div>
-                        
-                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                            <p className="text-sm text-yellow-800">
-                                <strong>Note:</strong> Codex CLI does not require separate credentials configuration. All settings are handled via environment variables.
-                            </p>
-                        </div>
-                    </div>
-
                     <Button
                         onClick={handleSave}
-                        disabled={isLoading || !!errors.claudeEnv || !!errors.claudeCredentials || !!errors.codexEnv}
+                        disabled={isLoading || !!errors.claudeEnv || !!errors.claudeCredentials}
                         className="w-full"
                     >
                         <Save className="w-4 h-4 mr-2" />

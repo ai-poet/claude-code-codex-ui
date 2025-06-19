@@ -1,8 +1,8 @@
-# Async Code Agent
+# Claude Code UI
 
-Use Claude Code / CodeX CLI to perform multiple tasks in parallel with a Codex-style UI.
+Use Claude Code to perform multiple tasks in parallel with a Claude Code-style UI.
 
-A code agent task management system that provides parallel execution of AI-powered coding tasks. Users can run multiple Claude Code agents simultaneously through a Codex-style web interface, with support for different agents for comparison and evaluation.
+A code agent task management system that provides parallel execution of Claude Code automation tasks. Users can run multiple Claude Code agents simultaneously through a web interface focused on Claude Code integration.
 
 ![async-code-ui](https://github.com/user-attachments/assets/e490c605-681a-4abb-a440-323e15f1a90d)
 
@@ -12,19 +12,18 @@ A code agent task management system that provides parallel execution of AI-power
 
 ## Key Features
 
-- 🤖 **Multi-Agent Support**: Run Claude Code and other AI agents in parallel
+- 🤖 **Claude Code Integration**: Run Claude Code automation tasks in parallel
 - 🔄 **Parallel Task Management**: Execute multiple coding tasks simultaneously  
-- 🌐 **Codex-Style Web UI**: Clean interface for managing agent tasks
-- 🔍 **Agent Comparison**: Compare outputs from different AI models
+- 🌐 **Clean Web UI**: Modern interface for managing Claude Code tasks
 - 🐳 **Containerized Execution**: Secure sandboxed environment for each task
 - 🔗 **Git Integration**: Automatic repository cloning, commits, and PR creation
-- **Selfhost**: Deploy you rown parallel code agent platform.
+- **Selfhost**: Deploy your own parallel code agent platform.
 
 ## Architecture
 
 - **Frontend**: Next.js with TypeScript and TailwindCSS
 - **Backend**: Python Flask API with Docker orchestration
-- **Agents**: Claude Code (Anthropic) with extensible support for other models
+- **Agent**: Claude Code (Anthropic)
 - **Task Management**: Parallel execution system based on container
 
 ## Quick Start
@@ -72,10 +71,9 @@ See `db/README.md` for detailed database setup instructions.
 
 1. **Setup GitHub Token**: Enter your GitHub token in the web interface
 2. **Configure Repository**: Specify target repository and branch
-3. **Select Agent**: Choose your preferred AI agent (Claude Code, etc.)
-4. **Submit Tasks**: Start multiple coding tasks in parallel
-5. **Compare Results**: Review and compare outputs from different agents
-6. **Create PRs**: Generate pull requests from successful tasks
+3. **Submit Tasks**: Start multiple Claude Code tasks in parallel
+4. **Review Results**: Review outputs from Claude Code automation
+5. **Create PRs**: Generate pull requests from successful tasks
 
 ## Environment Variables
 

@@ -7,22 +7,36 @@ import json
 
 logger = logging.getLogger(__name__)
 
-# Initialize Supabase client
+# Initialize Supabase client (optional)
 supabase_url = os.getenv('SUPABASE_URL')
 supabase_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')  # Use service role key for server operations
 
-if not supabase_url or not supabase_key:
-    logger.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables")
-    raise ValueError("Supabase configuration is missing")
+supabase: Client = None
 
-supabase: Client = create_client(supabase_url, supabase_key)
+if supabase_url and supabase_key:
+    try:
+        supabase = create_client(supabase_url, supabase_key)
+        logger.info("Supabase client initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize Supabase client: {e}")
+        supabase = None
+else:
+    logger.warning("Supabase configuration not provided - database features will be disabled")
+    logger.info("To enable database features, set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables")
 
 class DatabaseOperations:
+    
+    @staticmethod
+    def _check_database_available():
+        """Check if database is available and raise appropriate error if not"""
+        if supabase is None:
+            raise ValueError("Database not configured. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables")
     
     @staticmethod
     def create_project(user_id: str, name: str, description: str, repo_url: str, 
                       repo_name: str, repo_owner: str, settings: Dict = None) -> Dict:
         """Create a new project"""
+        DatabaseOperations._check_database_available()
         try:
             project_data = {
                 'user_id': user_id,

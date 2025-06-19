@@ -5,11 +5,7 @@ FROM node:20.9.0-alpine
 WORKDIR /app
 
 # Install system dependencies that might be needed
-RUN apk add --no-cache \
-    bash \
-    git \
-    curl \
-    vim
+RUN apk add --no-cache bash git
 
 # Install claude-code globally
 RUN npm install -g @anthropic-ai/claude-code
@@ -33,4 +29,4 @@ RUN chmod +x ./setup.sh
 EXPOSE 3000
 
 # Set the default command to run setup.sh
-CMD ["./setup.sh"] 
+CMD ["sh", "./setup.sh"] 

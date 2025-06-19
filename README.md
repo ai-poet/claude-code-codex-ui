@@ -36,13 +36,31 @@ A code agent task management system that provides parallel execution of AI-power
    ./build.sh
    ```
 
-2. **Configure**
+2. **Configure Environment**
    - Add your Anthropic API key to `server/.env`
    - Get a GitHub Personal Access Token with repo permissions
+   - *Optional*: Configure Supabase database (see Database Setup section)
 
 3. **Run**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:5000
+
+## Database Setup (Optional)
+
+The application can run without a database for basic functionality. To enable advanced features with persistent data storage:
+
+1. **Create a Supabase project** at https://supabase.com
+2. **Initialize the database** by running the SQL script in your Supabase dashboard:
+   ```sql
+   -- Copy and run the contents of db/init_supabase.sql in Supabase SQL Editor
+   ```
+3. **Configure environment variables** in `server/.env`:
+   ```bash
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+   ```
+
+See `db/README.md` for detailed database setup instructions.
 
 ## Usage
 
@@ -57,8 +75,17 @@ A code agent task management system that provides parallel execution of AI-power
 
 ```bash
 # server/.env
+
+# Required: Anthropic API Key
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+# Flask Configuration
 FLASK_ENV=production
+
+# Optional: Supabase Database Configuration
+# Leave these empty or with placeholder values to run without database
+SUPABASE_URL=your_supabase_url_here
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
 ```
 
 

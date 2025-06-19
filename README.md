@@ -479,7 +479,3 @@ server {
 详见 LICENSE 文件。
 
 ---
-
-## Production Deployment
-
-### Nginx Configuration

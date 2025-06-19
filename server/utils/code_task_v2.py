@@ -65,7 +65,7 @@ def cleanup_orphaned_containers():
         logger.warning(f"⚠️  Failed to cleanup orphaned containers: {e}")
 
 def run_ai_code_task_v2(task_id: int, user_id: str, github_token: str):
-    """Run AI Code automation (Claude or Codex) in a container - Supabase version"""
+    """Run Claude Code automation in a container - Supabase version"""
     try:
         # Get task from database to check the model type
         task = DatabaseOperations.get_task_by_id(task_id, user_id)
@@ -75,8 +75,16 @@ def run_ai_code_task_v2(task_id: int, user_id: str, github_token: str):
         
         model_cli = task.get('agent', 'claude')
         
-        # With comprehensive sandboxing fixes, both Claude and Codex can now run in parallel
-        logger.info(f"🚀 Running {model_cli.upper()} task {task_id} directly in parallel mode")
+        # Only Claude is supported
+        if model_cli != 'claude':
+            logger.error(f"Unsupported model: {model_cli}. Only Claude is supported.")
+            DatabaseOperations.update_task(task_id, user_id, {
+                'status': 'failed',
+                'error': f'Unsupported model: {model_cli}. Only Claude is supported.'
+            })
+            return
+        
+        logger.info(f"🚀 Running Claude Code task {task_id}")
         return _run_ai_code_task_v2_internal(task_id, user_id, github_token)
             
     except Exception as e:
@@ -90,7 +98,7 @@ def run_ai_code_task_v2(task_id: int, user_id: str, github_token: str):
             logger.error(f"Failed to update task {task_id} status after exception")
 
 def _run_ai_code_task_v2_internal(task_id: int, user_id: str, github_token: str):
-    """Internal implementation of AI Code automation - called directly for Claude or via queue for Codex"""
+    """Internal implementation of Claude Code automation"""
     try:
         # Clean up any orphaned containers before starting new task
         cleanup_orphaned_containers()
@@ -140,7 +148,7 @@ def _run_ai_code_task_v2_internal(task_id: int, user_id: str, github_token: str)
             'DEBIAN_FRONTEND': 'noninteractive',  # Non-interactive package installs
         }
         
-        # Add model-specific API keys and environment variables
+        # Add Claude-specific API keys and environment variables
         model_cli = task.get('agent', 'claude')
         
         # Get user preferences for custom environment variables
@@ -148,95 +156,54 @@ def _run_ai_code_task_v2_internal(task_id: int, user_id: str, github_token: str)
         user_preferences = user.get('preferences', {}) if user else {}
         
         if user_preferences:
-            logger.info(f"🔧 Found user preferences for {model_cli}: {list(user_preferences.keys())}")
+            logger.info(f"🔧 Found user preferences for Claude: {list(user_preferences.keys())}")
         
-        if model_cli == 'claude':
-            # Start with default Claude environment
-            claude_env = {
-                'ANTHROPIC_API_KEY': os.getenv('ANTHROPIC_API_KEY'),
-                'ANTHROPIC_NONINTERACTIVE': '1'  # Custom flag for Anthropic tools
-            }
-            # Merge with user's custom Claude environment variables
-            claude_config = user_preferences.get('claudeCode', {})
-            if claude_config and claude_config.get('env'):
-                claude_env.update(claude_config['env'])
-            env_vars.update(claude_env)
-        elif model_cli == 'codex':
-            # Start with default Codex environment
-            codex_env = {
-                'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY'),
-                'OPENAI_NONINTERACTIVE': '1',  # Custom flag for OpenAI tools
-                'CODEX_QUIET_MODE': '1',  # Official Codex non-interactive flag
-                'CODEX_UNSAFE_ALLOW_NO_SANDBOX': '1',  # Disable Codex internal sandboxing to prevent Docker conflicts
-                'CODEX_DISABLE_SANDBOX': '1',  # Alternative sandbox disable flag
-                'CODEX_NO_SANDBOX': '1'  # Another potential sandbox disable flag
-            }
-            # Merge with user's custom Codex environment variables
-            codex_config = user_preferences.get('codex', {})
-            if codex_config and codex_config.get('env'):
-                codex_env.update(codex_config['env'])
-            env_vars.update(codex_env)
+        # Start with default Claude environment
+        claude_env = {
+            'ANTHROPIC_API_KEY': os.getenv('ANTHROPIC_API_KEY'),
+            'ANTHROPIC_NONINTERACTIVE': '1'  # Custom flag for Anthropic tools
+        }
+        # Merge with user's custom Claude environment variables
+        claude_config = user_preferences.get('claudeCode', {})
+        if claude_config and claude_config.get('env'):
+            claude_env.update(claude_config['env'])
+        env_vars.update(claude_env)
         
-        # Use specialized container images based on model
-        if model_cli == 'codex':
-            container_image = 'codex-automation:latest'
-        else:
-            container_image = 'claude-code-automation:latest'
+        # Use Claude Code container image
+        container_image = 'claude-code-automation:latest'
         
-        # Add staggered start to prevent race conditions with parallel Codex tasks
-        if model_cli == 'codex':
-            # Random delay between 0.5-2 seconds for Codex containers to prevent resource conflicts
-            stagger_delay = random.uniform(0.5, 2.0)
-            logger.info(f"🕐 Adding {stagger_delay:.1f}s staggered start delay for Codex task {task_id}")
-            time.sleep(stagger_delay)
-            
-            # Add file-based locking for Codex to prevent parallel execution conflicts
-            lock_file_path = '/tmp/codex_execution_lock'
-            try:
-                logger.info(f"🔒 Acquiring Codex execution lock for task {task_id}")
-                with open(lock_file_path, 'w') as lock_file:
-                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    logger.info(f"✅ Codex execution lock acquired for task {task_id}")
-                    # Continue with container creation while holding the lock
-            except (IOError, OSError) as e:
-                logger.warning(f"⚠️  Could not acquire Codex execution lock for task {task_id}: {e}")
-                # Add additional delay if lock fails
-                additional_delay = random.uniform(1.0, 3.0)
-                logger.info(f"🕐 Adding additional {additional_delay:.1f}s delay due to lock conflict")
-                time.sleep(additional_delay)
         
         # Load Claude credentials from user preferences in Supabase
         credentials_content = ""
         escaped_credentials = ""
-        if model_cli == 'claude':
-            logger.info(f"🔍 Looking for Claude credentials in user preferences for task {task_id}")
-            
-            # Check if user has Claude credentials in their preferences
-            claude_config = user_preferences.get('claudeCode', {})
-            credentials_json = claude_config.get('credentials') if claude_config else None
-            
-            # Check if credentials is meaningful (not empty object, null, undefined, or empty string)
-            has_meaningful_credentials = (
-                credentials_json is not None and 
-                credentials_json != {} and 
-                credentials_json != "" and
-                (isinstance(credentials_json, dict) and len(credentials_json) > 0)
-            )
-            
-            if has_meaningful_credentials:
-                try:
-                    # Convert JSON object to string for writing to container
-                    credentials_content = json.dumps(credentials_json)
-                    logger.info(f"📋 Successfully loaded Claude credentials from user preferences and stringified ({len(credentials_content)} characters) for task {task_id}")
-                    # Escape credentials content for shell
-                    escaped_credentials = credentials_content.replace("'", "'\"'\"'").replace('\n', '\\n')
-                    logger.info(f"📋 Credentials content escaped for shell injection")
-                except Exception as e:
-                    logger.error(f"❌ Failed to process Claude credentials from user preferences: {e}")
-                    credentials_content = ""
-                    escaped_credentials = ""
-            else:
-                logger.info(f"ℹ️  No meaningful Claude credentials found in user preferences for task {task_id} - skipping credentials setup (credentials: {credentials_json})")
+        logger.info(f"🔍 Looking for Claude credentials in user preferences for task {task_id}")
+        
+        # Check if user has Claude credentials in their preferences
+        claude_config = user_preferences.get('claudeCode', {})
+        credentials_json = claude_config.get('credentials') if claude_config else None
+        
+        # Check if credentials is meaningful (not empty object, null, undefined, or empty string)
+        has_meaningful_credentials = (
+            credentials_json is not None and 
+            credentials_json != {} and 
+            credentials_json != "" and
+            (isinstance(credentials_json, dict) and len(credentials_json) > 0)
+        )
+        
+        if has_meaningful_credentials:
+            try:
+                # Convert JSON object to string for writing to container
+                credentials_content = json.dumps(credentials_json)
+                logger.info(f"📋 Successfully loaded Claude credentials from user preferences and stringified ({len(credentials_content)} characters) for task {task_id}")
+                # Escape credentials content for shell
+                escaped_credentials = credentials_content.replace("'", "'\"'\"'").replace('\n', '\\n')
+                logger.info(f"📋 Credentials content escaped for shell injection")
+            except Exception as e:
+                logger.error(f"❌ Failed to process Claude credentials from user preferences: {e}")
+                credentials_content = ""
+                escaped_credentials = ""
+        else:
+            logger.info(f"ℹ️  No meaningful Claude credentials found in user preferences for task {task_id} - skipping credentials setup (credentials: {credentials_json})")
         
         # Create the command to run in container (v2 function)
         container_command = f'''
@@ -254,99 +221,34 @@ git config user.name "Claude Code Automation"
 # We'll extract the patch instead of pushing directly
 echo "📋 Will extract changes as patch for later PR creation..."
 
-echo "Starting {model_cli.upper()} Code with prompt..."
+echo "Starting Claude Code with prompt..."
 
 # Create a temporary file with the prompt using heredoc for proper handling
 cat << 'PROMPT_EOF' > /tmp/prompt.txt
 {prompt}
 PROMPT_EOF
 
-# Setup Claude credentials for Claude tasks
-if [ "{model_cli}" = "claude" ]; then
-    echo "Setting up Claude credentials..."
-    
-    # Create ~/.claude directory if it doesn't exist
-    mkdir -p ~/.claude
-    
-    # Write credentials content directly to file
-    if [ ! -z '{escaped_credentials}' ]; then
-        echo "📋 Writing credentials to ~/.claude/.credentials.json"
-        cat << 'CREDENTIALS_EOF' > ~/.claude/.credentials.json
+# Setup Claude credentials
+echo "Setting up Claude credentials..."
+
+# Create ~/.claude directory if it doesn't exist
+mkdir -p ~/.claude
+
+# Write credentials content directly to file
+if [ ! -z '{escaped_credentials}' ]; then
+    echo "📋 Writing credentials to ~/.claude/.credentials.json"
+    cat << 'CREDENTIALS_EOF' > ~/.claude/.credentials.json
 {credentials_content}
 CREDENTIALS_EOF
-        echo "✅ Claude credentials configured"
-    else
-        echo "⚠️  No credentials content available"
-    fi
+    echo "✅ Claude credentials configured"
+else
+    echo "⚠️  No credentials content available"
 fi
 
-# Check which CLI tool to use based on model selection
-if [ "{model_cli}" = "codex" ]; then
-    echo "Using Codex (OpenAI Codex) CLI..."
-    
-    # Set environment variables for non-interactive mode
-    export CODEX_QUIET_MODE=1
-    export CODEX_UNSAFE_ALLOW_NO_SANDBOX=1
-    export CODEX_DISABLE_SANDBOX=1
-    export CODEX_NO_SANDBOX=1
-    
-    # Debug: Verify environment variables are set
-    echo "=== CODEX DEBUG INFO ==="
-    echo "CODEX_QUIET_MODE: $CODEX_QUIET_MODE"
-    echo "CODEX_UNSAFE_ALLOW_NO_SANDBOX: $CODEX_UNSAFE_ALLOW_NO_SANDBOX"
-    echo "OPENAI_API_KEY: $(echo $OPENAI_API_KEY | head -c 8)..."
-    echo "USING OFFICIAL CODEX FLAGS: --approval-mode full-auto --quiet for non-interactive operation"
-    echo "======================="
-    
-    # Read the prompt from file
-    PROMPT_TEXT=$(cat /tmp/prompt.txt)
-    
-    # Check for codex installation
-    if [ -f /usr/local/bin/codex ]; then
-        echo "Found codex at /usr/local/bin/codex"
-        echo "Running Codex in non-interactive mode..."
-        
-        # Use official non-interactive flags for Docker environment
-        # Using --approval-mode full-auto as per official Codex documentation
-        # Also disable Codex's internal sandboxing to prevent conflicts with Docker
-        /usr/local/bin/codex --approval-mode full-auto --quiet "$PROMPT_TEXT"
-        CODEX_EXIT_CODE=$?
-        echo "Codex finished with exit code: $CODEX_EXIT_CODE"
-        
-        if [ $CODEX_EXIT_CODE -ne 0 ]; then
-            echo "ERROR: Codex failed with exit code $CODEX_EXIT_CODE"
-            exit $CODEX_EXIT_CODE
-        fi
-        
-        echo "✅ Codex completed successfully"
-    elif command -v codex >/dev/null 2>&1; then
-        echo "Using codex from PATH..."
-        echo "Running Codex in non-interactive mode..."
-        
-        # Use official non-interactive flags for Docker environment
-        # Using --approval-mode full-auto as per official Codex documentation
-        # Also disable Codex's internal sandboxing to prevent conflicts with Docker
-        codex --approval-mode full-auto --quiet "$PROMPT_TEXT"
-        CODEX_EXIT_CODE=$?
-        echo "Codex finished with exit code: $CODEX_EXIT_CODE"
-        
-        if [ $CODEX_EXIT_CODE -ne 0 ]; then
-            echo "ERROR: Codex failed with exit code $CODEX_EXIT_CODE"
-            exit $CODEX_EXIT_CODE
-        fi
-        
-        echo "✅ Codex completed successfully"
-    else
-        echo "ERROR: codex command not found anywhere"
-        echo "Please ensure Codex CLI is installed in the container"
-        exit 1
-    fi
-    
-else
-    echo "Using Claude CLI..."
-    
-    # Try different ways to invoke claude
-    echo "Checking claude installation..."
+echo "Using Claude CLI..."
+
+# Try different ways to invoke claude
+echo "Checking claude installation..."
 
 if [ -f /usr/local/bin/claude ]; then
     echo "Found claude at /usr/local/bin/claude"
@@ -449,13 +351,11 @@ else
     which node 2>/dev/null && echo "node: available" || echo "node: not found"
     which sh 2>/dev/null && echo "sh: available" || echo "sh: not found"
     exit 1
-fi
-
-fi  # End of model selection (claude vs codex)
+fi  # End of Claude CLI setup
 
 # Check if there are changes
 if git diff --quiet; then
-    echo "ℹ️  No changes made by {model_cli.upper()} - this is a valid outcome"
+    echo "ℹ️  No changes made by Claude - this is a valid outcome"
     echo "The AI tool ran successfully but decided not to make changes"
     
     # Create empty patch and diff for consistency
@@ -480,7 +380,7 @@ if git diff --quiet; then
 else
     # Commit changes locally
     git add .
-    git commit -m "{model_cli.capitalize()}: {escaped_prompt[:100]}"
+    git commit -m "Claude: {escaped_prompt[:100]}"
 
     # Get commit info
     COMMIT_HASH=$(git rev-parse HEAD)
@@ -526,7 +426,7 @@ exit 0
         # Run container with unified AI Code tools (supports both Claude and Codex)
         logger.info(f"🐳 Creating Docker container for task {task_id} using {container_image} (model: {model_name})")
         
-        # Configure Docker security options for Codex compatibility
+        # Configure Docker security options
         container_kwargs = {
             'image': container_image,
             'command': ['bash', '-c', container_command],
@@ -537,26 +437,12 @@ exit 0
             'network_mode': 'bridge',  # Ensure proper networking
             'tty': False,  # Don't allocate TTY - may prevent clean exit
             'stdin_open': False,  # Don't keep stdin open - may prevent clean exit
-            'name': f'ai-code-task-{task_id}-{int(time.time())}-{uuid.uuid4().hex[:8]}',  # Highly unique container name with UUID
+            'name': f'claude-code-task-{task_id}-{int(time.time())}-{uuid.uuid4().hex[:8]}',  # Highly unique container name with UUID
             'mem_limit': '2g',  # Limit memory usage to prevent resource conflicts
             'cpu_shares': 1024,  # Standard CPU allocation
             'ulimits': [docker.types.Ulimit(name='nofile', soft=1024, hard=2048)]  # File descriptor limits
         }
         
-        # Add essential Docker configuration for Codex compatibility
-        if model_cli == 'codex':
-            logger.warning(f"⚠️  Running Codex with enhanced Docker privileges to bypass seccomp/landlock restrictions")
-            container_kwargs.update({
-                # Essential security options for Codex compatibility
-                'security_opt': [
-                    'seccomp=unconfined',      # Disable seccomp to prevent syscall filtering conflicts
-                    'apparmor=unconfined',     # Disable AppArmor MAC controls
-                    'no-new-privileges=false'  # Allow privilege escalation needed by Codex
-                ],
-                'cap_add': ['ALL'],            # Grant all Linux capabilities
-                'privileged': True,            # Run in fully privileged mode
-                'pid_mode': 'host'            # Share host PID namespace
-            })
         
         # Retry container creation with enhanced conflict handling
         container = None
@@ -572,7 +458,7 @@ exit 0
                 if "Conflict" in error_msg and "already in use" in error_msg:
                     # Handle container name conflicts by generating a new unique name
                     logger.warning(f"🔄 Container name conflict on attempt {attempt + 1}, generating new name...")
-                    new_name = f'ai-code-task-{task_id}-{int(time.time())}-{uuid.uuid4().hex[:8]}'
+                    new_name = f'claude-code-task-{task_id}-{int(time.time())}-{uuid.uuid4().hex[:8]}'
                     container_kwargs['name'] = new_name
                     logger.info(f"🆔 New container name: {new_name}")
                     # Try to clean up any conflicting containers

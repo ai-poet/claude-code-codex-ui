@@ -35,9 +35,9 @@ def start_task():
         if not all([prompt, repo_url, github_token]):
             return jsonify({'error': 'prompt, repo_url, and github_token are required'}), 400
         
-        # Validate model selection
-        if model not in ['claude', 'codex']:
-            return jsonify({'error': 'model must be either "claude" or "codex"'}), 400
+        # Validate model selection - only claude is supported
+        if model != 'claude':
+            return jsonify({'error': 'model must be "claude"'}), 400
         
         # Create initial chat message
         chat_messages = [{

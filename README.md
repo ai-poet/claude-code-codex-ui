@@ -1,6 +1,6 @@
 # Claude Code UI
 
-Use Claude Code to perform multiple tasks in parallel with a Claude Code-style UI.
+Use Claude Code to perform multiple tasks in parallel with a modern UI.
 
 A code agent task management system that provides parallel execution of Claude Code automation tasks. Users can run multiple Claude Code agents simultaneously through a web interface focused on Claude Code integration.
 

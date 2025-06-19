@@ -211,6 +211,11 @@ def _run_ai_code_task_v2_internal(task_id: int, user_id: str, github_token: str)
         logger.info(f"[调试] Claude prompt: {prompt}")
         
         # Create the command to run in container (v2 function)
+        repo_url = task['repo_url']
+        if github_token:
+            # 替换 https://github.com/owner/repo.git 为 https://<token>@github.com/owner/repo.git
+            repo_url = repo_url.replace('https://github.com/', f'https://{github_token}@github.com/')
+        
         container_command = f'''
 echo "===== [调试] 容器启动，打印全部环境变量 ====="
 env
@@ -223,7 +228,7 @@ set -e
 echo "Setting up repository..."
 
 # Clone repository
-git clone -b {task['target_branch']} {task['repo_url']} /workspace/repo
+git clone -b {task['target_branch']} {repo_url} /workspace/repo
 cd /workspace/repo
 
 # Configure git

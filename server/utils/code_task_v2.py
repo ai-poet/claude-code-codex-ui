@@ -507,7 +507,7 @@ exit 0
             
             # Use standard wait - container should exit when bash script finishes
             logger.info(f"🔄 Calling container.wait() - container should exit when script completes...")
-            result = container.wait(timeout=300)  # 5 minute timeout
+            result = container.wait(timeout=1800)  # 30 minute timeout
             logger.info(f"🎯 Container exited naturally! Exit code: {result['StatusCode']}")
             
             # Verify final container state

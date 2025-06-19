@@ -168,7 +168,7 @@ def _run_ai_code_task_v2_internal(task_id: int, user_id: str, github_token: str)
         if claude_config and claude_config.get('env'):
             claude_env.update(claude_config['env'])
         env_vars.update(claude_env)
-        
+        print(env_vars)
         # Use Claude Code container image
         container_image = 'claude-code-automation:latest'
         
@@ -205,8 +205,20 @@ def _run_ai_code_task_v2_internal(task_id: int, user_id: str, github_token: str)
         else:
             logger.info(f"ℹ️  No meaningful Claude credentials found in user preferences for task {task_id} - skipping credentials setup (credentials: {credentials_json})")
         
+        # 打印 Claude 相关环境变量（只显示 key 是否存在和长度，不打印具体 key）
+        safe_env_vars = {k: (v[:5] + '...' if v and len(v) > 8 else v) if 'KEY' in k or 'TOKEN' in k else v for k, v in env_vars.items()}
+        logger.info(f"[调试] Claude 相关 env_vars: {safe_env_vars}")
+        logger.info(f"[调试] Claude prompt: {prompt}")
+        
         # Create the command to run in container (v2 function)
         container_command = f'''
+echo "===== [调试] 容器启动，打印全部环境变量 ====="
+env
+echo "===== [调试] 当前目录内容 ====="
+ls -alh
+echo "===== [调试] ANTHROPIC_API_KEY 长度: $(echo -n $ANTHROPIC_API_KEY | wc -c) ====="
+echo "===== [调试] ANTHROPIC_BASE_URL: $ANTHROPIC_BASE_URL ====="
+echo "===== [调试] ANTHROPIC_BASE_URL 长度: $(echo -n $ANTHROPIC_BASE_URL | wc -c) ====="
 set -e
 echo "Setting up repository..."
 
@@ -277,7 +289,7 @@ if [ -f /usr/local/bin/claude ]; then
             
             # Method 1: Use the official --print flag for non-interactive mode
             echo "Using --print flag for non-interactive mode..."
-            cat /tmp/prompt.txt | node /usr/local/bin/claude --print --allowedTools "Edit,Bash"
+            cat /tmp/prompt.txt | node /usr/local/bin/claude --print --allowedTools "Edit,Bash" --debug 2>&1
             CLAUDE_EXIT_CODE=$?
             echo "Claude Code finished with exit code: $CLAUDE_EXIT_CODE"
             
@@ -286,6 +298,7 @@ if [ -f /usr/local/bin/claude ]; then
                 exit $CLAUDE_EXIT_CODE
             fi
             
+            echo "===== [调试] Claude CLI 执行后 ====="
             echo "✅ Claude Code completed successfully"
         else
             echo "Node.js not found, trying direct execution..."
@@ -509,7 +522,7 @@ exit 0
             # Clean up container after getting logs
             try:
                 container.reload()  # Refresh container state
-                container.remove()
+                # container.remove()
                 logger.info(f"🧹 Successfully removed container {container.id[:12]}")
             except docker.errors.NotFound:
                 logger.info(f"🧹 Container {container.id[:12]} already removed")

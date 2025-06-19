@@ -4,6 +4,7 @@ Use Claude Code to perform multiple tasks in parallel with a modern UI.
 
 A code agent task management system that provides parallel execution of Claude Code automation tasks. Users can run multiple Claude Code agents simultaneously through a web interface focused on Claude Code integration.
 
+> This project is based on [@ObservedObserver/async-code](https://github.com/ObservedObserver/async-code), modified and optimized for Claude Code integration.
 
 ![code-review](https://github.com/user-attachments/assets/bbf71c82-636c-487b-bb51-6ad0b393c2ef)
 

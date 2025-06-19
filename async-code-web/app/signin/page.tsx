@@ -40,10 +40,10 @@ export default function SignIn() {
                         <Code2 className="w-6 h-6 text-white" />
                     </div>
                     <h1 className="text-2xl font-bold text-slate-900 mb-2">
-                        Welcome to AI Code Automation
+                        Welcome to Claude Code Automation
                     </h1>
                     <p className="text-slate-600">
-                        Sign in to start automating your code with Claude Code & Codex CLI
+                        Sign in to start automating your code with Claude Code
                     </p>
                 </div>
 

@@ -22,7 +22,6 @@ import { ApiService } from "@/lib/api-service";
 import { SupabaseService } from "@/lib/supabase-service";
 import { Project, Task } from "@/types";
 import { ClaudeIcon } from "@/components/icon/claude";
-import { OpenAIIcon } from "@/components/icon/openai";
 import { toast } from "sonner";
 
 interface TaskWithProject extends Task {
@@ -264,7 +263,6 @@ export default function Home() {
     const getAgentIcon = (agent: string) => {
         switch (agent) {
             case "claude": return <ClaudeIcon className="w-3 h-3" />;
-            case "codex": return <OpenAIIcon className="w-3 h-3" />;
             default: return null;
         }
     };
@@ -297,8 +295,8 @@ export default function Home() {
                                 <Code2 className="w-4 h-4 text-white" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-semibold text-slate-900">Async Code</h1>
-                                <p className="text-sm text-slate-500">Manage parallel AI code agents (Codex & Claude)</p>
+                                <h1 className="text-xl font-semibold text-slate-900">Claude Code UI</h1>
+                                <p className="text-sm text-slate-500">Manage parallel Claude Code automation tasks</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
@@ -459,15 +457,6 @@ export default function Home() {
                                                             <div className="flex items-center gap-2">
                                                                 <span className="font-medium">Claude Code</span>
                                                                 <span className="text-xs text-slate-500">• Anthropic's agentic coding tool</span>
-                                                            </div>
-                                                        </div>
-                                                    </SelectItem>
-                                                    <SelectItem value="codex">
-                                                        <div className="flex items-center gap-3">
-                                                            <OpenAIIcon className="w-4 h-4 flex-shrink-0" />
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-medium">Codex</span>
-                                                                <span className="text-xs text-slate-500">• OpenAI's lightweight coding agent</span>
                                                             </div>
                                                         </div>
                                                     </SelectItem>
